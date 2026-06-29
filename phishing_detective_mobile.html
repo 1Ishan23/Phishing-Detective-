@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Phishing Detective 🎣</title>
+<style>
+  :root {
+    --bg: #0b1120;
+    --surface: #131f35;
+    --card: #1a2a44;
+    --border: rgba(255,255,255,0.10);
+    --text: #e8eef7;
+    --muted: #7a90b0;
+    --accent: #3b7ef8;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --purple: #a855f7;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(11,17,32,0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .topbar-subtitle { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .score-pills { display: flex; gap: 8px; }
+  .pill {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .pill-green { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .pill-red { background: rgba(239,68,68,0.15); color: #f87171; }
+
+  /* PROGRESS BAR */
+  .progress-wrap { height: 3px; background: rgba(255,255,255,0.08); }
+  .progress-fill { height: 3px; background: var(--accent); transition: width 0.4s ease; width: 12.5%; }
+
+  /* MAIN */
+  .main { padding: 16px 14px 100px; max-width: 520px; margin: 0 auto; }
+
+  /* QUESTION COUNTER */
+  .q-counter { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 12px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  /* TIP BANNER */
+  .tip-banner {
+    background: rgba(245,158,11,0.10);
+    border: 1px solid rgba(245,158,11,0.35);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #fcd34d;
+    margin-bottom: 14px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* MESSAGE CARD */
+  .msg-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .msg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .badge-sms { background: rgba(59,126,248,0.18); color: #93c5fd; }
+  .badge-email { background: rgba(245,158,11,0.18); color: #fcd34d; }
+  .badge-whatsapp { background: rgba(34,197,94,0.18); color: #86efac; }
+  .badge-call { background: rgba(168,85,247,0.18); color: #d8b4fe; }
+
+  .msg-sender {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .msg-body {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--text);
+    background: rgba(0,0,0,0.2);
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  /* QUESTION */
+  .question {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 14px;
+  }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 12px; margin-bottom: 14px; }
+  .choice-btn {
+    flex: 1;
+    padding: 15px 12px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 2px solid;
+    transition: transform 0.1s, opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .choice-btn:active { transform: scale(0.96); }
+  .choice-btn:disabled { opacity: 0.45; }
+  .btn-scam {
+    background: rgba(239,68,68,0.12);
+    border-color: #ef4444;
+    color: #fca5a5;
+  }
+  .btn-safe {
+    background: rgba(34,197,94,0.12);
+    border-color: #22c55e;
+    color: #86efac;
+  }
+
+  /* FEEDBACK */
+  .feedback {
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback-correct { background: rgba(34,197,94,0.10); border: 1px solid rgba(34,197,94,0.4); }
+  .feedback-wrong { background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.4); }
+  .feedback-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .clue { display: flex; gap: 8px; margin-bottom: 5px; font-size: 13px; color: #c8d8f0; line-height: 1.5; }
+  .clue-dot { flex-shrink: 0; margin-top: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+
+  /* NEXT BTN */
+  .next-btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 14px;
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: none;
+    transition: opacity 0.15s;
+  }
+  .next-btn.show { display: block; }
+  .next-btn:active { opacity: 0.85; }
+
+  /* RESULT SCREEN */
+  #result-screen { display: none; }
+  .result-wrap { min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem 1rem; }
+  .result-emoji { font-size: 64px; margin-bottom: 12px; }
+  .result-title { font-size: 26px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  .result-score-wrap { margin: 16px 0; }
+  .result-score { font-size: 52px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .result-score-label { font-size: 13px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .result-msg { font-size: 15px; color: #94a3b8; max-width: 340px; line-height: 1.7; margin: 12px auto 24px; }
+  .result-badges { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+  .result-badge { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+  .badge-correct-r { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .badge-wrong-r { background: rgba(239,68,68,0.15); color: #f87171; }
+  .restart-btn {
+    padding: 15px 40px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .restart-btn:active { opacity: 0.8; }
+
+  /* HIDDEN */
+  .hidden { display: none !important; }
+
+  /* SHARE SECTION ON RESULT */
+  .share-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-top: 16px;
+    width: 100%;
+    max-width: 340px;
+    text-align: left;
+  }
+  .share-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .share-hint { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+  .share-link { font-size: 12px; color: var(--accent); word-break: break-all; margin-top: 6px; background: rgba(59,126,248,0.08); padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(59,126,248,0.2); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">🎣 Phishing Detective</div>
+    <div class="topbar-subtitle">Spot the scam — Cyber Security Quiz</div>
+  </div>
+  <div class="score-pills">
+    <span class="pill pill-green" id="correct-count">✓ 0</span>
+    <span class="pill pill-red" id="wrong-count">✗ 0</span>
+  </div>
+</div>
+<div class="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
+
+<!-- GAME -->
+<div class="main" id="game-area">
+  <div class="q-counter" id="q-counter">Question 1 of 8</div>
+  <div class="tip-banner" id="tip-banner">💡 Read carefully — fake messages often look very real!</div>
+
+  <div class="msg-card">
+    <div class="msg-badge" id="msg-badge"></div>
+    <div class="msg-sender" id="msg-sender"></div>
+    <div class="msg-body" id="msg-body"></div>
+  </div>
+
+  <div class="question">Is this a scam or safe?</div>
+  <div class="btn-row">
+    <button class="choice-btn btn-scam" id="btn-scam" onclick="answer('scam')">💀 Scam</button>
+    <button class="choice-btn btn-safe" id="btn-safe" onclick="answer('safe')">🛡️ Safe</button>
+  </div>
+
+  <div class="feedback" id="feedback">
+    <div class="feedback-title" id="fb-title"></div>
+    <div id="fb-clues"></div>
+  </div>
+
+  <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next message →</button>
+</div>
+
+<!-- RESULT -->
+<div id="result-screen">
+  <div class="result-wrap">
+    <div class="result-emoji" id="result-emoji"></div>
+    <div class="result-title" id="result-title"></div>
+    <div class="result-score-wrap">
+      <div class="result-score" id="result-score"></div>
+      <div class="result-score-label">out of 8 correct</div>
+    </div>
+    <div class="result-badges">
+      <span class="result-badge badge-correct-r" id="r-correct"></span>
+      <span class="result-badge badge-wrong-r" id="r-wrong"></span>
+    </div>
+    <div class="result-msg" id="result-msg"></div>
+    <button class="restart-btn" onclick="restart()">🔄 Play Again</button>
+    <div class="share-card">
+      <div class="share-title">📤 Share with classmates</div>
+      <div class="share-hint">Send this file via WhatsApp or open it on any phone's browser — no internet needed!</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const messages = [
+  {
+    badge:'badge-sms', label:'📱 SMS',
+    sender:'SBI Bank — +91-9876XXXXX',
+    body:'Dear Customer, your SBI account will be SUSPENDED in 24 hours due to incomplete KYC. Update NOW: http://sbi-kyc-update.in/verify?id=38271',
+    answer:'scam', explanation:'This is a SCAM!',
+    clues:['Real banks NEVER send KYC links via SMS','Wrong URL: sbi-kyc-update.in is NOT sbi.co.in','Urgent threat language: "SUSPENDED in 24 hours"','Banks never ask you to click a link to verify']
+  },
+  {
+    badge:'badge-whatsapp', label:'💬 WhatsApp',
+    sender:'IRCTC Official (Verified)',
+    body:'Your PNR 4827561930 for Train 12505 on 29-Jun is confirmed. Departure: Silchar 06:15. Coach S4, Berth 32 (Lower). Check status on irctc.co.in',
+    answer:'safe', explanation:'This is SAFE!',
+    clues:['No link asking for login or OTP','Points to irctc.co.in — the real website','Only shares booking info, asks for nothing','Personalized with PNR and berth details']
+  },
+  {
+    badge:'badge-email', label:'📧 Email',
+    sender:'From: prize-winner@amazon-india-offer.com',
+    body:"Congratulations! You have been selected as LUCKY WINNER of Rs. 5,00,000 in Amazon's 25th Anniversary Offer. To claim, pay Rs. 499 processing fee and share your Aadhaar + bank details.",
+    answer:'scam', explanation:'This is a SCAM!',
+    clues:['Fake domain: amazon-india-offer.com ≠ amazon.in','No real company asks you to PAY to claim a prize','Asking for Aadhaar + bank details = major red flag','"Lucky winner" with no contest = always fake']
+  },
+  {
+    badge:'badge-sms', label:'📱 SMS',
+    sender:'PAYTM',
+    body:'Rs. 250.00 debited from your Paytm Wallet on 29-Jun-2026 at 11:32 AM for UPI payment to Sharma Grocery, Silchar. Not done by you? Call 1800-1800-1234.',
+    answer:'safe', explanation:'This is SAFE!',
+    clues:['Tells you about a transaction — asks for nothing','No link to click, no OTP to share','Gives a real customer care number to call','Specific amount, time, merchant — not vague']
+  },
+  {
+    badge:'badge-call', label:'📞 Phone Call',
+    sender:'Caller: "From Jio Customer Care"',
+    body:'"Namaskar, main Jio customer care se bol raha hoon. Aapka SIM band hone wala hai. Activate karne ke liye abhi apna OTP share karein jo aapke phone par aaya hai."',
+    answer:'scam', explanation:'This is a SCAM!',
+    clues:['Jio / any telecom NEVER calls asking for OTP','Panic tactic: "SIM band hone wala hai"','OTP is YOUR key — no legit company needs it','Correct action: Hang up, call Jio on 198 yourself']
+  },
+  {
+    badge:'badge-whatsapp', label:'💬 WhatsApp',
+    sender:'Rahul (College Friend)',
+    body:'Bro urgent help chahiye! Main Dubai airport pe phans gaya hoon. Passport chori ho gaya. Rs. 15,000 bhej de abhi Google Pay pe. Baat nahi ho sakti abhi phone pe.',
+    answer:'scam', explanation:'This is a SCAM!',
+    clues:['"Can\'t talk on phone" = classic trick to dodge voice check','Always CALL the person before sending any money','Friend\'s account may have been hacked','Urgent + money + no call = 100% scam pattern']
+  },
+  {
+    badge:'badge-email', label:'📧 Email',
+    sender:'From: noreply@hdfcbank.com',
+    body:'Dear Mr. Sharma, your HDFC Credit Card statement for June 2026 is ready. Log in at netbanking.hdfcbank.com to view it. Do NOT share your NetBanking password with anyone.',
+    answer:'safe', explanation:'This is SAFE!',
+    clues:['Real sender domain: @hdfcbank.com','Official URL: netbanking.hdfcbank.com','Actively warns you NOT to share password','No OTP request, no threat, no suspicious link']
+  },
+  {
+    badge:'badge-sms', label:'📱 SMS',
+    sender:'+91-8XXXXXXX (Unknown)',
+    body:'Urgent Job Offer! Work from home. Earn Rs. 25,000/day by liking YouTube videos. No experience needed. Pay Rs. 999 joining fee: http://easyjobs24.xyz/register',
+    answer:'scam', explanation:'This is a SCAM!',
+    clues:['No job pays Rs. 25,000/day for liking videos','Paying to get a job = always a scam','Fake domain: easyjobs24.xyz','Real jobs never charge "joining fees" — it\'s illegal in India']
+  }
+];
+
+let current = 0, correct = 0, wrong = 0, answered = false;
+let shuffled = [...messages].sort(() => Math.random() - 0.5);
+
+function loadQ() {
+  answered = false;
+  const q = shuffled[current];
+  document.getElementById('q-counter').textContent = `Question ${current+1} of 8`;
+  document.getElementById('progress-fill').style.width = `${((current+1)/8)*100}%`;
+  document.getElementById('msg-badge').className = `msg-badge ${q.badge}`;
+  document.getElementById('msg-badge').textContent = q.label;
+  document.getElementById('msg-sender').textContent = q.sender;
+  document.getElementById('msg-body').textContent = q.body;
+  document.getElementById('tip-banner').classList.remove('hidden');
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('next-btn').className = 'next-btn';
+  document.getElementById('btn-scam').disabled = false;
+  document.getElementById('btn-safe').disabled = false;
+}
+
+function answer(choice) {
+  if (answered) return;
+  answered = true;
+  const q = shuffled[current];
+  const ok = choice === q.answer;
+  document.getElementById('tip-banner').classList.add('hidden');
+  if (ok) { correct++; document.getElementById('correct-count').textContent = `✓ ${correct}`; }
+  else { wrong++; document.getElementById('wrong-count').textContent = `✗ ${wrong}`; }
+  const fb = document.getElementById('feedback');
+  fb.className = `feedback show ${ok ? 'feedback-correct' : 'feedback-wrong'}`;
+  document.getElementById('fb-title').textContent = `${ok ? '✅ Correct!' : '❌ Wrong!'} ${q.explanation}`;
+  document.getElementById('fb-clues').innerHTML = q.clues.map(c =>
+    `<div class="clue"><div class="clue-dot"></div><div>${c}</div></div>`
+  ).join('');
+  document.getElementById('btn-scam').disabled = true;
+  document.getElementById('btn-safe').disabled = true;
+  if (current < 7) {
+    document.getElementById('next-btn').className = 'next-btn show';
+  } else {
+    setTimeout(showResult, 1500);
+  }
+}
+
+function nextQuestion() { current++; loadQ(); }
+
+function showResult() {
+  document.getElementById('game-area').classList.add('hidden');
+  document.getElementById('result-screen').style.display = 'block';
+  const pct = Math.round((correct/8)*100);
+  let emoji, title, msg;
+  if (pct===100) { emoji='🏆'; title='Cyber Champion!'; msg='Perfect score! You can spot every phishing attempt. Share this quiz with your family tonight!'; }
+  else if (pct>=75) { emoji='🛡️'; title='Cyber Aware!'; msg='Great job! You caught most scams. Review the ones you missed — those are the tricks real hackers use.'; }
+  else if (pct>=50) { emoji='📚'; title='Keep Learning!'; msg='Not bad! But scammers are clever. Always check the sender, URL, and urgency level before acting.'; }
+  else { emoji='⚠️'; title='Stay Alert!'; msg='Scams are designed to trick you. Golden rules: never share OTP, never pay for prizes, always verify by calling back.'; }
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-score').textContent = correct;
+  document.getElementById('result-msg').textContent = msg;
+  document.getElementById('r-correct').textContent = `✓ ${correct} correct`;
+  document.getElementById('r-wrong').textContent = `✗ ${wrong} wrong`;
+}
+
+function restart() {
+  current=0; correct=0; wrong=0;
+  shuffled = [...messages].sort(() => Math.random() - 0.5);
+  document.getElementById('correct-count').textContent = '✓ 0';
+  document.getElementById('wrong-count').textContent = '✗ 0';
+  document.getElementById('progress-fill').style.width = '12.5%';
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('game-area').classList.remove('hidden');
+  loadQ();
+}
+
+loadQ();
+</script>
+</body>
+</html>
